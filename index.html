@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f4fbf5">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Emerald Kettle Bagels</title>
+<style>
+  /* Material 3 Expressive, built from an emerald seed color. */
+  :root {
+    --primary: #006c4c; --on-primary: #ffffff;
+    --primary-container: #8df7c6; --on-primary-container: #002115;
+    --secondary-container: #cfe9d9; --on-secondary-container: #0a1f16;
+    --wait-container: #ffddb3; --on-wait-container: #291800; --wait: #855300;
+    --error-container: #ffdad6; --on-error-container: #410002;
+    --surface: #f4fbf5; --surface-low: #eef6ef; --surface-container: #e8f0e9;
+    --surface-high: #e2eae4; --surface-highest: #dde5de;
+    --on-surface: #161d19; --on-surface-variant: #404943; --outline: #707973;
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --r-xl: 36px; --r-lg: 28px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--surface); color: var(--on-surface);
+    font-family: Roboto, "Google Sans", "Segoe UI", system-ui, Arial, sans-serif;
+    font-size: 22px; line-height: 1.3;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { font: inherit; color: inherit; border: 0; cursor: pointer; touch-action: manipulation; }
+  button:focus-visible { outline: 5px solid #1a5fd0; outline-offset: 3px; }
+  .hidden { display: none !important; }
+
+  header { padding: 22px 28px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; max-width: 1280px; margin: 0 auto; }
+  .brand { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; color: var(--primary); }
+  .when { background: var(--secondary-container); color: var(--on-secondary-container); border-radius: 999px; padding: 8px 18px; font-size: 19px; font-weight: 500; }
+  main { padding: 16px 28px 240px; max-width: 1280px; margin: 0 auto; }
+  h1 { font-size: 52px; line-height: 1.05; font-weight: 800; letter-spacing: -0.02em; margin: 12px 0 24px; }
+  .banner { border-radius: var(--r-lg); padding: 18px 24px; margin: 0 0 22px; font-weight: 500; }
+  .banner.note { background: var(--wait-container); color: var(--on-wait-container); }
+  .banner.error { background: var(--error-container); color: var(--on-error-container); font-weight: 700; }
+
+  .face {
+    border-radius: 50%; color: #fff; font-weight: 800; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    background-size: cover; background-position: center;
+  }
+
+  /* Who's ordering */
+  .people { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .person {
+    background: var(--surface-container); border-radius: var(--r-xl); padding: 28px 12px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    font-size: 34px; font-weight: 700; transition: transform 0.25s var(--spring), border-radius 0.25s, background 0.2s;
+  }
+  .person:active { transform: scale(0.94); border-radius: 56px; background: var(--primary-container); }
+  .person .face { width: 136px; height: 136px; font-size: 72px; }
+
+  /* Pick bagels */
+  .topbar { display: flex; align-items: center; gap: 16px 24px; flex-wrap: wrap; margin-bottom: 22px; }
+  .topbar h1 { margin: 0; flex: 1 1 320px; }
+  .switcher { display: flex; align-items: center; gap: 10px; background: var(--surface-container); border-radius: 999px; padding: 8px; }
+  .switcher button { background: none; border-radius: 50%; padding: 4px; transition: transform 0.25s var(--spring); }
+  .switcher button:active { transform: scale(0.88); }
+  .switcher .face { width: 64px; height: 64px; font-size: 32px; opacity: 0.55; transition: all 0.25s var(--spring); }
+  .switcher [aria-current="true"] .face { width: 84px; height: 84px; font-size: 44px; opacity: 1; box-shadow: 0 0 0 5px var(--surface), 0 0 0 10px var(--primary); margin: 6px; }
+
+  .tiles { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); grid-auto-rows: 1fr; }
+  .tile {
+    background: var(--surface-container); border-radius: var(--r-xl); padding: 10px;
+    display: flex; flex-direction: column; gap: 10px;
+    transition: background 0.25s, transform 0.3s var(--spring);
+  }
+  .tile.has { background: var(--primary-container); color: var(--on-primary-container); }
+  .add {
+    flex: 1; background: none; border-radius: var(--r-lg); padding: 18px 8px 6px;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px;
+  }
+  .art { width: 148px; height: 148px; margin-bottom: 8px; transition: transform 0.3s var(--spring); border-radius: 40px; background-size: cover; background-position: center; }
+  .add:active .art { transform: scale(0.86) rotate(-12deg); }
+  .add .name { font-size: 30px; font-weight: 800; letter-spacing: -0.01em; }
+  .add .what { font-size: 19px; color: var(--on-surface-variant); }
+  .tile.has .what { color: inherit; opacity: 0.8; }
+
+  .stepper { display: flex; align-items: center; gap: 8px; background: var(--surface); border-radius: 999px; padding: 8px; }
+  .stepper button {
+    width: 84px; height: 72px; border-radius: 999px; font-size: 44px; font-weight: 500; line-height: 1;
+    display: flex; align-items: center; justify-content: center; flex: none;
+    transition: transform 0.2s var(--spring), border-radius 0.2s;
+  }
+  .stepper button:active { transform: scale(0.9); border-radius: 22px; }
+  .stepper .minus { background: var(--surface-highest); color: var(--on-surface); }
+  .stepper .minus:disabled { opacity: 0.35; }
+  .stepper .plus { background: var(--primary); color: var(--on-primary); }
+  .stepper .num { flex: 1; text-align: center; font-size: 44px; font-weight: 800; color: var(--on-surface); }
+  .num.zero { color: var(--outline); }
+  .bump { animation: bump 0.35s var(--spring); }
+  @keyframes bump { 40% { transform: scale(1.05); } }
+  .shake { animation: shake 0.3s; }
+  @keyframes shake { 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+  /* Tray */
+  .tray {
+    position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface-high);
+    border-radius: var(--r-xl) var(--r-xl) 0 0; padding: 18px 28px 20px;
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    box-shadow: 0 -4px 20px rgba(0, 33, 21, 0.14);
+  }
+  .tray .items { flex: 1; min-width: 240px; }
+  .pics { display: flex; flex-wrap: wrap; gap: 6px; min-height: 52px; align-items: center; }
+  .pics svg { width: 50px; height: 50px; animation: pop 0.3s var(--spring); }
+  .pics .waiting { opacity: 0.4; }
+  @keyframes pop { from { transform: scale(0.3); } }
+  .words { font-size: 22px; margin-top: 6px; font-weight: 500; }
+  .words .waitword { color: var(--wait); }
+  .done {
+    background: var(--primary); color: var(--on-primary); border-radius: 32px;
+    font-size: 38px; font-weight: 800; padding: 0 44px 0 34px; min-height: 104px;
+    display: inline-flex; align-items: center; gap: 14px;
+    transition: transform 0.25s var(--spring), border-radius 0.25s;
+  }
+  .done svg { width: 44px; height: 44px; }
+  .done:active { transform: scale(0.94); border-radius: 52px; }
+  .done:disabled { opacity: 0.5; }
+
+  /* Thanks */
+  .thanks { text-align: center; padding-top: 28px; }
+  .thanks ul { list-style: none; padding: 0; margin: 0 auto 20px; font-size: 30px; font-weight: 700; display: inline-flex; flex-direction: column; gap: 12px; }
+  .thanks li { background: var(--surface-container); border-radius: var(--r-lg); padding: 16px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .tag { border-radius: 999px; padding: 4px 16px; font-size: 22px; font-weight: 700; }
+  .tag.yes { background: var(--primary-container); color: var(--on-primary-container); }
+  .tag.wait { background: var(--wait-container); color: var(--on-wait-container); }
+  .thanks p { color: var(--on-surface-variant); margin: 0 0 26px; }
+
+  @media (max-width: 600px) {
+    body { font-size: 19px; } h1 { font-size: 36px; }
+    header { padding: 16px 16px 0; } main { padding: 12px 16px 250px; }
+    .people, .tiles { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .person .face { width: 96px; height: 96px; font-size: 50px; } .person { font-size: 26px; }
+    .art { width: 104px; height: 104px; } .add .name { font-size: 23px; } .add .what { font-size: 16px; }
+    .stepper { padding: 6px; gap: 2px; } .stepper button { width: 56px; height: 56px; font-size: 34px; } .stepper .num { font-size: 32px; }
+    .switcher .face { width: 48px; height: 48px; font-size: 24px; }
+    .switcher [aria-current="true"] .face { width: 60px; height: 60px; font-size: 30px; }
+    .tray { padding: 14px 16px; } .done { font-size: 30px; min-height: 80px; padding: 0 30px 0 22px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">Emerald Kettle Bagels</span>
+  <span class="when hidden" id="when"></span>
+</header>
+<main>
+  <p class="banner error hidden" id="error" role="alert"></p>
+  <p id="loading" role="status">Getting the bagels ready...</p>
+
+  <section id="who" class="hidden" aria-labelledby="whoTitle">
+    <h1 id="whoTitle">Who's ordering?</h1>
+    <p class="banner note hidden" id="locked"></p>
+    <div class="people" id="people"></div>
+  </section>
+
+  <section id="pick" class="hidden" aria-labelledby="pickTitle">
+    <div class="topbar">
+      <h1 id="pickTitle"></h1>
+      <nav class="switcher" id="switcher" aria-label="Switch person"></nav>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="tray" role="region" aria-label="Your order">
+      <div class="items">
+        <div class="pics" id="pics" aria-hidden="true"></div>
+        <div class="words" id="words" aria-live="polite"></div>
+      </div>
+      <button class="done" id="done" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.5l5 5 10-11"/></svg>
+        Done
+      </button>
+    </div>
+  </section>
+
+  <section id="thanks" class="thanks hidden" aria-labelledby="thanksTitle">
+    <h1 id="thanksTitle" tabindex="-1"></h1>
+    <ul id="summary"></ul>
+    <p id="change"></p>
+    <button class="done" id="ok" type="button">OK</button>
+  </section>
+</main>
+
+<script>
+(function () {
+  // Where orders go: the Apps Script that sits on the family Sheet.
+  var API = window.EKB_API || 'https://script.google.com/macros/s/AKfycby4roWU9cXcLoQpj6gyU-L0fZMfWDexh7SyGtIUKF8fwowd3PUUFNh6lilMKgK8e8DRbg/exec';
+
+  // The family code comes from the link (?f=...). It is remembered on the
+  // device, so a home screen shortcut keeps working without it.
+  var code = '';
+  try {
+    code = new URLSearchParams(location.search).get('f') || localStorage.getItem('ekb_family') || '';
+  } catch (e) { /* private windows may block storage; the link still works */ }
+  function rememberCode() {   // only once the code has been shown to work
+    try { localStorage.setItem('ekb_family', code); } catch (e) { /* fine */ }
+  }
+  var bagelColors = ['#d99a4e', '#4a443d', '#7a4526', '#e5a917', '#4656b0', '#c0479b', '#2f8f83', '#c4552d'];
+  var faceColors = ['#3f51b5', '#c2552d', '#6b3f22', '#ab3d8f', '#00796b', '#7b5800', '#5e35b1', '#b3261e'];
+  var state = null, who = null, counts = {}, busy = false;
+  function $(id) { return document.getElementById(id); }
+  function show(id) {
+    ['loading', 'who', 'pick', 'thanks'].forEach(function (s) { $(s).classList.toggle('hidden', s !== id); });
+    window.scrollTo(0, 0);
+  }
+  function setBusy(on) {
+    busy = on;
+    $('done').disabled = on;
+  }
+  function fail(message) {
+    setBusy(false);
+    $('loading').classList.add('hidden');
+    $('error').textContent = (message && message.message) || String(message);
+    $('error').classList.remove('hidden');
+    if (who) renderPick();
+  }
+  function call(name, args, then) {
+    $('error').classList.add('hidden');
+    // Sent with no Google account attached, as plain text, so the browser
+    // makes one simple request and Google never tries to pick an account.
+    fetch(API, {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ fn: name, args: args })
+    }).then(function (response) {
+      if (!response.ok) throw new Error('The bagel kitchen did not answer. Please try again.');
+      return response.json();
+    }).then(function (reply) {
+      if (reply.error) throw new Error(reply.error);
+      then(reply.value);
+    }).catch(function (err) {
+      fail(err && err.name === 'TypeError' ? 'We could not reach the bagel kitchen. Check the internet and try again.' : err);
+    });
+  }
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function bagels(n) { return n + (n === 1 ? ' bagel' : ' bagels'); }
+  function colorOf(flavorId) {
+    for (var i = 0; i < state.flavors.length; i++) if (state.flavors[i].id === flavorId) return bagelColors[i % bagelColors.length];
+    return bagelColors[0];
+  }
+  function bagel(color) {
+    var ns = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    var ring = document.createElementNS(ns, 'path');
+    ring.setAttribute('fill-rule', 'evenodd');
+    ring.setAttribute('fill', color);
+    ring.setAttribute('stroke', '#5b3a15');
+    ring.setAttribute('stroke-width', '5');
+    ring.setAttribute('d', 'M50 6 A44 44 0 1 0 50 94 A44 44 0 1 0 50 6 Z M50 34 A16 16 0 1 1 50 66 A16 16 0 1 1 50 34 Z');
+    svg.appendChild(ring);
+    return svg;
+  }
+  function face(member) {
+    var index = 0;
+    state.members.forEach(function (m, i) { if (m.id === member.id) index = i; });
+    var f = el('span', 'face', member.photo ? '' : member.name.charAt(0).toUpperCase());
+    f.style.backgroundColor = faceColors[index % faceColors.length];
+    if (member.photo) f.style.backgroundImage = 'url("' + encodeURI(member.photo) + '")';
+    f.setAttribute('aria-hidden', 'true');
+    return f;
+  }
+  function total() {
+    var t = 0;
+    for (var k in counts) t += counts[k];
+    return t;
+  }
+  function saved(memberId) {   // what the Sheet has for this person
+    var out = {}, tray = state.trays[memberId] || {};
+    for (var k in tray) out[k] = tray[k].confirmed + tray[k].waitlist;
+    return out;
+  }
+  function confirmedSaved(memberId) {
+    var t = 0, tray = state.trays[memberId] || {};
+    for (var k in tray) t += tray[k].confirmed;
+    return t;
+  }
+  function changed() {
+    var before = saved(who.id);
+    return state.flavors.some(function (f) { return (before[f.id] || 0) !== (counts[f.id] || 0); });
+  }
+  function clock(ms) {
+    var d = new Date(ms);
+    return d.toLocaleDateString(undefined, { weekday: 'long' }) + ' at ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  // ------------------------------------------------------------ who
+  function renderWho() {
+    who = null;
+    $('when').textContent = 'Week of ' + new Date(state.week.startMs).toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) +
+      '. Order by ' + clock(state.week.cutoffMs) + '.';
+    $('when').classList.remove('hidden');
+
+    var locked = $('locked');
+    if (state.locked) {
+      var parts = state.locked.map(function (l) { return l.quantity + ' ' + l.name; });
+      locked.textContent = 'This week is locked. ' +
+        (parts.length ? 'Coming for your family: ' + parts.join(', ') + '. ' : '') +
+        'You are now ordering for next week.';
+      locked.classList.remove('hidden');
+    } else {
+      locked.classList.add('hidden');
+    }
+
+    var box = $('people');
+    box.textContent = '';
+    state.members.forEach(function (m) {
+      var b = el('button', 'person');
+      b.type = 'button';
+      b.appendChild(face(m));
+      b.appendChild(el('span', '', m.name));
+      b.onclick = function () { choose(m); };
+      box.appendChild(b);
+    });
+    show('who');
+  }
+
+  // ------------------------------------------------------------ pick
+  function choose(member) {
+    who = member;
+    counts = saved(member.id);
+    $('pickTitle').textContent = 'Hi ' + member.name + '!';
+
+    // Everyone in the family, as faces. Tap a face to switch person.
+    var nav = $('switcher');
+    nav.textContent = '';
+    state.members.forEach(function (m) {
+      var b = el('button');
+      b.type = 'button';
+      b.appendChild(face(m));
+      if (m.id === member.id) {
+        b.setAttribute('aria-current', 'true');
+        b.setAttribute('aria-label', m.name + ', ordering now');
+      } else {
+        b.setAttribute('aria-label', 'Switch to ' + m.name);
+        b.onclick = function () { switchTo(m); };
+      }
+      nav.appendChild(b);
+    });
+
+    var box = $('tiles');
+    box.textContent = '';
+    state.flavors.forEach(function (f) {
+      var tile = el('div', 'tile');
+      tile.id = 'tile_' + f.id;
+      var add = el('button', 'add');
+      add.type = 'button';
+      var art = el('span', 'art');
+      art.setAttribute('aria-hidden', 'true');
+      if (f.photo) art.style.backgroundImage = 'url("' + encodeURI(f.photo) + '")';
+      else art.appendChild(bagel(colorOf(f.id)));
+      add.appendChild(art);
+      add.appendChild(el('span', 'name', f.name));
+      if (f.description && f.description !== f.name) add.appendChild(el('span', 'what', f.description));
+      add.onclick = function () { change(f, 1); };
+
+      var stepper = el('div', 'stepper');
+      var minus = el('button', 'minus', '−');
+      minus.type = 'button';
+      minus.setAttribute('aria-label', 'Take away one ' + f.name + ' bagel');
+      minus.onclick = function () { change(f, -1); };
+      var num = el('span', 'num');
+      num.setAttribute('aria-hidden', 'true');
+      var plus = el('button', 'plus', '+');
+      plus.type = 'button';
+      plus.setAttribute('aria-label', 'Add one ' + f.name + ' bagel');
+      plus.onclick = function () { change(f, 1); };
+      stepper.appendChild(minus);
+      stepper.appendChild(num);
+      stepper.appendChild(plus);
+
+      tile.appendChild(add);
+      tile.appendChild(stepper);
+      tile._add = add; tile._num = num; tile._minus = minus;
+      box.appendChild(tile);
+    });
+    renderPick();
+    show('pick');
+  }
+
+  function change(flavor, by) {
+    if (busy) return;
+    var tile = $('tile_' + flavor.id);
+    var have = counts[flavor.id] || 0;
+    if (by > 0 && total() + by > state.limits[who.id]) {
+      tile.classList.remove('shake'); void tile.offsetWidth; tile.classList.add('shake');
+      renderPick();
+      $('words').appendChild(document.createTextNode(' That is your limit for this week.'));
+      return;
+    }
+    counts[flavor.id] = Math.max(0, have + by);
+    tile.classList.remove('bump'); void tile.offsetWidth; tile.classList.add('bump');
+    renderPick();
+  }
+
+  function renderPick() {
+    var room = confirmedSaved(who.id) + state.room;   // how much of this tray can be confirmed
+    var pics = $('pics');
+    var mine = 0, waiting = 0, wanted = [];
+    state.flavors.forEach(function (f) {
+      var n = counts[f.id] || 0;
+      var tile = $('tile_' + f.id);
+      tile.classList.toggle('has', n > 0);
+      tile._num.textContent = n;
+      tile._num.classList.toggle('zero', n === 0);
+      tile._minus.disabled = n === 0;
+      tile._add.setAttribute('aria-label', 'Add one ' + f.name + ' bagel. You have ' + n + '.');
+      for (var i = 0; i < n; i++) wanted.push(f.id);
+    });
+    // Keep pictures that are already there, so only new ones pop in.
+    while (pics.children.length > wanted.length) pics.removeChild(pics.lastChild);
+    wanted.forEach(function (flavorId, i) {
+      var pic = pics.children[i];
+      if (!pic || pic.getAttribute('data-flavor') !== flavorId) {
+        var fresh = bagel(colorOf(flavorId));
+        fresh.setAttribute('data-flavor', flavorId);
+        if (pic) pics.replaceChild(fresh, pic); else pics.appendChild(fresh);
+        pic = fresh;
+      }
+      if (i < room) { mine++; pic.removeAttribute('class'); } else { waiting++; pic.setAttribute('class', 'waiting'); }
+    });
+    var words = $('words');
+    words.textContent = '';
+    if (!wanted.length) {
+      words.textContent = 'Your tray is empty. Tap a bagel to add it.';
+    } else {
+      words.appendChild(document.createTextNode(bagels(wanted.length) + '. '));
+      if (mine) words.appendChild(el('span', '', mine + ' for you. '));
+      if (waiting) words.appendChild(el('span', 'waitword', waiting + ' on the waitlist.'));
+    }
+  }
+
+  // ------------------------------------------------------------ save
+  function save(then) {
+    setBusy(true);
+    $('words').textContent = 'Saving...';
+    call('apiSaveOrder', [code, who.id, counts], function (next) {
+      setBusy(false);
+      state = next;
+      then();
+    });
+  }
+
+  // Switching person keeps what the first person picked.
+  function switchTo(member) {
+    if (busy) return;
+    if (changed()) save(function () { choose(member); });
+    else choose(member);
+  }
+
+  $('ok').onclick = renderWho;
+  $('done').onclick = function () {
+    if (busy) return;
+    var member = who;
+    save(function () {
+      var tray = state.trays[member.id] || {};
+      var list = $('summary');
+      list.textContent = '';
+      var any = false;
+      state.flavors.forEach(function (f) {
+        var t = tray[f.id];
+        if (!t || !(t.confirmed + t.waitlist)) return;
+        any = true;
+        var li = el('li');
+        li.appendChild(el('span', '', (t.confirmed + t.waitlist) + ' ' + f.name));
+        if (t.confirmed) li.appendChild(el('span', 'tag yes', t.confirmed + ' for you'));
+        if (t.waitlist) li.appendChild(el('span', 'tag wait', t.waitlist + ' on the waitlist'));
+        list.appendChild(li);
+      });
+      $('thanksTitle').textContent = any ? 'Thanks, ' + member.name + '!' : 'OK ' + member.name + ', no bagels this week.';
+      $('change').textContent = 'You can change your order until ' + clock(state.week.cutoffMs) + '.';
+      show('thanks');
+      $('thanksTitle').focus();
+    });
+  };
+
+  if (!code) {
+    fail('This link is missing its family code. Ask Alyn for your family link.');
+  } else {
+    call('apiGetState', [code], function (first) { rememberCode(); state = first; renderWho(); });
+  }
+})();
+</script>
+</body>
+</html>
