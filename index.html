@@ -124,6 +124,18 @@
   .done svg { width: 44px; height: 44px; }
   .done:active { transform: scale(0.94); border-radius: 52px; }
   .done:disabled { opacity: 0.5; }
+  .done.tonal { background: var(--secondary-container); color: var(--on-secondary-container); font-size: 28px; min-height: 84px; padding: 0 30px 0 24px; }
+  .buttons { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+  /* Everyone's count, so the family can see the week add up. */
+  .family { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border-radius: 999px; padding: 4px 16px 4px 4px; font-size: 24px; font-weight: 800; }
+  .chip .face { width: 40px; height: 40px; font-size: 22px; }
+  .chip.me { background: var(--primary-container); color: var(--on-primary-container); }
+  .chip.sum { background: var(--primary); color: var(--on-primary); padding: 4px 18px; min-height: 48px; }
+  .who-row { display: flex; align-items: center; gap: 12px; font-weight: 800; }
+  .who-row .face { width: 56px; height: 56px; font-size: 30px; }
+  .thanks li.total { background: var(--primary-container); color: var(--on-primary-container); }
 
   /* Thanks */
   .thanks { text-align: center; padding-top: 28px; }
@@ -172,11 +184,18 @@
       <div class="items">
         <div class="pics" id="pics" aria-hidden="true"></div>
         <div class="words" id="words" aria-live="polite"></div>
+        <div class="family" id="family" role="img"></div>
       </div>
-      <button class="done" id="done" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.5l5 5 10-11"/></svg>
-        Done
-      </button>
+      <div class="buttons">
+        <button class="done" id="done" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.5l5 5 10-11"/></svg>
+          Done
+        </button>
+        <button class="done tonal" id="familyDone" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><circle cx="8" cy="8" r="3.4"/><circle cx="16.5" cy="8.6" r="2.8"/><path d="M1.5 19c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6v1h-13z"/><path d="M16 13.2c3.4-.3 6.5 1.7 6.5 5.300v1.500h-6v-1c0-2.200-.800-4-2.100-5.200.500-.300 1-.500 1.600-.600z"/></g></svg>
+          Family done
+        </button>
+      </div>
     </div>
   </section>
 
@@ -208,6 +227,7 @@
   function $(id) { return document.getElementById(id); }
   function show(id) {
     ['loading', 'who', 'pick', 'thanks'].forEach(function (s) { $(s).classList.toggle('hidden', s !== id); });
+    if (id !== 'pick') document.querySelector('main').style.paddingBottom = '';
     window.scrollTo(0, 0);
   }
   function setBusy(on) {
@@ -390,6 +410,7 @@
     });
     renderPick();
     show('pick');
+    fitTray();
   }
 
   function change(flavor, by) {
@@ -442,6 +463,31 @@
       if (mine) words.appendChild(el('span', '', mine + ' for you. '));
       if (waiting) words.appendChild(el('span', 'waitword', waiting + ' on the waitlist.'));
     }
+
+    // The family tally: each person's count, with this tray counted live.
+    var family = $('family');
+    family.textContent = '';
+    var sum = 0, spoken = [];
+    state.members.forEach(function (m) {
+      var n = 0;
+      if (m.id === who.id) n = wanted.length;
+      else { var theirs = saved(m.id); for (var k in theirs) n += theirs[k]; }
+      sum += n;
+      spoken.push(m.name + ' ' + n);
+      var chip = el('span', 'chip' + (m.id === who.id ? ' me' : ''));
+      chip.appendChild(face(m));
+      chip.appendChild(el('span', '', n));
+      family.appendChild(chip);
+    });
+    family.appendChild(el('span', 'chip sum', 'Family: ' + sum));
+    family.setAttribute('aria-label', 'Family total: ' + bagels(sum) + '. ' + spoken.join(', ') + '.');
+    fitTray();
+  }
+
+  // Leave room under the tiles for however tall the tray is right now.
+  function fitTray() {
+    var tray = document.querySelector('.tray');
+    document.querySelector('main').style.paddingBottom = who && tray.offsetHeight ? (tray.offsetHeight + 24) + 'px' : '';
   }
 
   // ------------------------------------------------------------ save
@@ -462,7 +508,20 @@
     else choose(member);
   }
 
+  function showThanks(title) {
+    $('thanksTitle').textContent = title;
+    $('change').textContent = 'You can change your order until ' + clock(state.week.cutoffMs) + '.';
+    show('thanks');
+    $('thanksTitle').focus();
+  }
+  function tags(li, confirmed, waitlist, mineWord) {
+    if (confirmed) li.appendChild(el('span', 'tag yes', confirmed + ' ' + mineWord));
+    if (waitlist) li.appendChild(el('span', 'tag wait', waitlist + ' on the waitlist'));
+  }
+
   $('ok').onclick = renderWho;
+
+  // Done: one person is finished.
   $('done').onclick = function () {
     if (busy) return;
     var member = who;
@@ -477,14 +536,46 @@
         any = true;
         var li = el('li');
         li.appendChild(el('span', '', (t.confirmed + t.waitlist) + ' ' + f.name));
-        if (t.confirmed) li.appendChild(el('span', 'tag yes', t.confirmed + ' for you'));
-        if (t.waitlist) li.appendChild(el('span', 'tag wait', t.waitlist + ' on the waitlist'));
+        tags(li, t.confirmed, t.waitlist, 'for you');
         list.appendChild(li);
       });
-      $('thanksTitle').textContent = any ? 'Thanks, ' + member.name + '!' : 'OK ' + member.name + ', no bagels this week.';
-      $('change').textContent = 'You can change your order until ' + clock(state.week.cutoffMs) + '.';
-      show('thanks');
-      $('thanksTitle').focus();
+      showThanks(any ? 'Thanks, ' + member.name + '!' : 'OK ' + member.name + ', no bagels this week.');
+    });
+  };
+
+  // Family done: save, then show what the whole family has ordered.
+  $('familyDone').onclick = function () {
+    if (busy) return;
+    save(function () {
+      var list = $('summary');
+      list.textContent = '';
+      var allConfirmed = 0, allWaiting = 0;
+      state.members.forEach(function (m) {
+        var tray = state.trays[m.id] || {};
+        var parts = [], confirmed = 0, waiting = 0;
+        state.flavors.forEach(function (f) {
+          var t = tray[f.id];
+          if (!t || !(t.confirmed + t.waitlist)) return;
+          parts.push((t.confirmed + t.waitlist) + ' ' + f.name);
+          confirmed += t.confirmed;
+          waiting += t.waitlist;
+        });
+        allConfirmed += confirmed;
+        allWaiting += waiting;
+        var li = el('li');
+        var name = el('span', 'who-row');
+        name.appendChild(face(m));
+        name.appendChild(el('span', '', m.name));
+        li.appendChild(name);
+        li.appendChild(el('span', '', parts.length ? parts.join(', ') : 'No bagels yet'));
+        tags(li, waiting ? confirmed : 0, waiting, 'confirmed');
+        list.appendChild(li);
+      });
+      var total = el('li', 'total');
+      total.appendChild(el('span', '', 'Family total: ' + bagels(allConfirmed + allWaiting)));
+      tags(total, allWaiting ? allConfirmed : 0, allWaiting, 'confirmed');
+      list.appendChild(total);
+      showThanks('The ' + state.family.name + ' family order');
     });
   };
 
