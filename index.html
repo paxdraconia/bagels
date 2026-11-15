@@ -113,7 +113,7 @@
   .pics svg { width: 50px; height: 50px; animation: pop 0.3s var(--spring); }
   .pics .waiting { opacity: 0.4; }
   @keyframes pop { from { transform: scale(0.3); } }
-  .words { font-size: 22px; margin-top: 6px; font-weight: 500; }
+  .words { font-size: 22px; margin: 8px 18px 0 0; font-weight: 500; display: inline-block; vertical-align: middle; }
   .words .waitword { color: var(--wait); }
   .done {
     background: var(--primary); color: var(--on-primary); border-radius: 32px;
@@ -128,7 +128,7 @@
   .buttons { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 
   /* Everyone's count, so the family can see the week add up. */
-  .family { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .family { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; vertical-align: middle; }
   .chip { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border-radius: 999px; padding: 4px 16px 4px 4px; font-size: 24px; font-weight: 800; }
   .chip .face { width: 40px; height: 40px; font-size: 22px; }
   .chip.me { background: var(--primary-container); color: var(--on-primary-container); }
@@ -145,6 +145,23 @@
   .tag.yes { background: var(--primary-container); color: var(--on-primary-container); }
   .tag.wait { background: var(--wait-container); color: var(--on-wait-container); }
   .thanks p { color: var(--on-surface-variant); margin: 0 0 26px; }
+  .standing {
+    display: inline-flex; align-items: center; gap: 18px; text-align: left; cursor: pointer;
+    background: var(--secondary-container); color: var(--on-secondary-container);
+    border-radius: var(--r-lg); padding: 18px 26px 18px 20px; margin: 0 0 22px;
+  }
+  .standing input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .standing .box {
+    width: 60px; height: 60px; flex: none; border-radius: 18px; border: 4px solid var(--outline);
+    background: var(--surface); color: transparent; display: flex; align-items: center; justify-content: center;
+    transition: all 0.25s var(--spring);
+  }
+  .standing .box svg { width: 40px; height: 40px; }
+  .standing input:checked + .box { background: var(--primary); border-color: var(--primary); color: var(--on-primary); transform: scale(1.06); }
+  .standing input:focus-visible + .box { outline: 5px solid #1a5fd0; outline-offset: 3px; }
+  .standing input:disabled + .box { opacity: 0.5; }
+  .standing .text { display: flex; flex-direction: column; gap: 2px; font-size: 20px; }
+  .standing .text b { font-size: 26px; }
 
   @media (max-width: 600px) {
     body { font-size: 19px; } h1 { font-size: 36px; }
@@ -202,6 +219,13 @@
   <section id="thanks" class="thanks hidden" aria-labelledby="thanksTitle">
     <h1 id="thanksTitle" tabindex="-1"></h1>
     <ul id="summary"></ul>
+    <div>
+      <label class="standing hidden" id="standingBox">
+        <input type="checkbox" id="standing">
+        <span class="box" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.5l5 5 10-11"/></svg></span>
+        <span class="text"><b>Make this my standing order</b><span>The same bagels every week until you change it.</span></span>
+      </label>
+    </div>
     <p id="change"></p>
     <button class="done" id="ok" type="button">OK</button>
   </section>
@@ -240,6 +264,8 @@
     $('error').textContent = (message && message.message) || String(message);
     $('error').classList.remove('hidden');
     if (who) renderPick();
+    $('standing').disabled = false;
+    if (standingFor && state) $('standing').checked = !!(state.standing || {})[standingFor.id];
   }
   function call(name, args, then) {
     $('error').classList.add('hidden');
@@ -459,7 +485,14 @@
     if (!wanted.length) {
       words.textContent = 'Your tray is empty. Tap a bagel to add it.';
     } else {
-      words.appendChild(document.createTextNode(bagels(wanted.length) + '. '));
+      // The first number is the whole family's count, then this person's share.
+      var everyone = wanted.length;
+      state.members.forEach(function (m) {
+        if (m.id === who.id) return;
+        var theirs = saved(m.id);
+        for (var k in theirs) everyone += theirs[k];
+      });
+      words.appendChild(document.createTextNode(bagels(everyone) + '. '));
       if (mine) words.appendChild(el('span', '', mine + ' for you. '));
       if (waiting) words.appendChild(el('span', 'waitword', waiting + ' on the waitlist.'));
     }
@@ -508,7 +541,22 @@
     else choose(member);
   }
 
+  // The standing order tick box shows after one person presses Done.
+  var standingFor = null;
+  $('standing').onchange = function () {
+    var box = $('standing'), member = standingFor, want = box.checked;
+    if (!member) return;
+    box.disabled = true;
+    call('apiSetStanding', [code, member.id, want], function (next) {
+      state = next;
+      box.disabled = false;
+      box.checked = !!(state.standing || {})[member.id];
+    });
+  };
+
   function showThanks(title) {
+    $('standingBox').classList.toggle('hidden', !standingFor);
+    $('standing').disabled = false;
     $('thanksTitle').textContent = title;
     $('change').textContent = 'You can change your order until ' + clock(state.week.cutoffMs) + '.';
     show('thanks');
@@ -539,6 +587,8 @@
         tags(li, t.confirmed, t.waitlist, 'for you');
         list.appendChild(li);
       });
+      standingFor = any ? member : null;
+      $('standing').checked = !!(state.standing || {})[member.id];
       showThanks(any ? 'Thanks, ' + member.name + '!' : 'OK ' + member.name + ', no bagels this week.');
     });
   };
@@ -575,6 +625,7 @@
       total.appendChild(el('span', '', 'Family total: ' + bagels(allConfirmed + allWaiting)));
       tags(total, allWaiting ? allConfirmed : 0, allWaiting, 'confirmed');
       list.appendChild(total);
+      standingFor = null;
       showThanks('The ' + state.family.name + ' family order');
     });
   };
